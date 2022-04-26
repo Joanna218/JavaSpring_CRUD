@@ -16,6 +16,7 @@ public class TestDemoApplication {
 }
 
 @RestController
+@RequestMapping("/coffees")
 class RestApiDemoController {
 	private List<Coffee> coffees = new ArrayList<>();
 
@@ -32,14 +33,14 @@ class RestApiDemoController {
 	}
 
 	// 得到全部的咖啡資料
-	@RequestMapping(value = "/coffees", method = RequestMethod.GET)
+	@RequestMapping(method = RequestMethod.GET)
 //	@GetMapping("/coffees")
 	Iterable<Coffee> getCoffees() {
 		return coffees;
 	}
 
 	// 得到某一筆的咖啡資料，傳入 id 查詢
-	@GetMapping("/coffees/{id}")
+	@GetMapping("/{id}")
 	Optional<Coffee> getCoffeeById(@PathVariable String id) {
 		for (Coffee c: coffees) {
 			if (c.getId().equals(id)) {
@@ -60,7 +61,7 @@ class RestApiDemoController {
 //	}
 
 
-	@PostMapping("/coffees")
+	@PostMapping()
 	List<Coffee> addCoffee(@RequestBody Coffee coffee) {
 		coffees.add(new Coffee(coffee.getName()));
 		return coffees;
@@ -73,7 +74,7 @@ class RestApiDemoController {
 	}
 
 	// 若無此更新資料就新增一筆，若有此資料就更新
-	@PutMapping("/coffees/{id}")
+	@PutMapping("/{id}")
 	Coffee putCoffee(@PathVariable String id, @RequestBody Coffee coffee) {
 		int coffeeIndex = -1;
 
@@ -87,7 +88,7 @@ class RestApiDemoController {
 		return (coffeeIndex == -1) ? postCoffee(coffee) : coffee;
 	}
 
-	@DeleteMapping("/coffees/{id}")
+	@DeleteMapping("/{id}")
 	void deleteCoffee(@PathVariable String id) {
 		coffees.removeIf(c -> c.getId().equals(id));
 	}
