@@ -2,6 +2,8 @@ package com.example.testDemo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -61,12 +63,12 @@ class RestApiDemoController {
 //	}
 
 
+//	@PostMapping()
+//	List<Coffee> addCoffee(@RequestBody Coffee coffee) {
+//		coffees.add(new Coffee(coffee.getName()));
+//		return coffees;
+//	}
 	@PostMapping()
-	List<Coffee> addCoffee(@RequestBody Coffee coffee) {
-		coffees.add(new Coffee(coffee.getName()));
-		return coffees;
-	}
-	@PostMapping("/coffees2")
 	Coffee postCoffee(@RequestBody Coffee coffee) {
 //		coffees.add(coffee); => 造成 id 為 null
 		coffees.add(new Coffee(coffee.getName()));
@@ -75,17 +77,19 @@ class RestApiDemoController {
 
 	// 若無此更新資料就新增一筆，若有此資料就更新
 	@PutMapping("/{id}")
-	Coffee putCoffee(@PathVariable String id, @RequestBody Coffee coffee) {
+	ResponseEntity<Coffee> putCoffee(@PathVariable String id, @RequestBody Coffee coffee) {
 		int coffeeIndex = -1;
 
 		for (Coffee c: coffees) {
-			if (c.getId().equals(id)) {
+			if (c.getId().equals(coffee.getId())) {
 				coffeeIndex = coffees.indexOf(c);
 				coffees.set(coffeeIndex, coffee);
 			}
 		}
 
-		return (coffeeIndex == -1) ? postCoffee(coffee) : coffee;
+		return (coffeeIndex == -1) ?
+				new ResponseEntity<>(postCoffee(coffee), HttpStatus.CREATED) :
+				new ResponseEntity<>(coffee, HttpStatus.OK);
 	}
 
 	@DeleteMapping("/{id}")
