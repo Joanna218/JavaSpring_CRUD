@@ -7,8 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.util.*;
@@ -21,6 +23,27 @@ public class TestDemoApplication {
 	}
 
 }
+// 為了使 Controller 功能單一化，將初始化資料樣本提高層次為單一元件
+@Component
+class DataLoader {
+	private final CoffeeRepository coffeeRepository;
+
+	@Autowired
+	public DataLoader(CoffeeRepository coffeeRepository) {
+		this.coffeeRepository = coffeeRepository;
+	}
+
+	@PostConstruct
+	private void loadData() {
+		// 步驟四：建立咖啡資料
+		coffeeRepository.saveAll(List.of(
+				new Coffee("Café Cereza"),
+				new Coffee("Café Ganador"),
+				new Coffee("Café Lareño"),
+				new Coffee("Café Três Pontas")
+		));
+	}
+}
 
 @RestController
 @RequestMapping("/coffees")
@@ -32,14 +55,6 @@ class RestApiDemoController {
 	@Autowired
 	public RestApiDemoController(CoffeeRepository coffeeRepository) {
 		this.coffeeRepository = coffeeRepository;
-
-		// 步驟四：建立咖啡資料
-		coffeeRepository.saveAll(List.of(
-				new Coffee("Café Cereza"),
-				new Coffee("Café Ganador"),
-				new Coffee("Café Lareño"),
-				new Coffee("Café Três Pontas")
-		));
 	}
 
 	// 步驟五：逐一修改為 coffeeRepository，並且使用 CrudRepository 中寫好的方法
@@ -64,10 +79,10 @@ class RestApiDemoController {
 	// 若無此更新資料就新增一筆，若有此資料就更新
 	@PutMapping("/{id}")
 	ResponseEntity<Coffee> putCoffee(@PathVariable String id, @RequestBody Coffee coffee) {
-		// 不存在 => 新增(CREATED)，存在 => 更新(HttpStatus.OK)
-		return (!coffeeRepository.existsById(id)) ?
-				new ResponseEntity<>(coffeeRepository.save(coffee), HttpStatus.CREATED) :
-				new ResponseEntity<>(coffeeRepository.save(coffee), HttpStatus.OK);
+		// 存在 => 更新(HttpStatus.OK)，不存在 => 新增(CREATED)
+		return (coffeeRepository.existsById(id)) ?
+				new ResponseEntity<>(coffeeRepository.save(coffee), HttpStatus.OK) :
+				new ResponseEntity<>(coffeeRepository.save(coffee), HttpStatus.CREATED);
 	}
 
 	@DeleteMapping("/{id}")
