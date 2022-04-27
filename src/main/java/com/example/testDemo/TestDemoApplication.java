@@ -1,11 +1,16 @@
 package com.example.testDemo;
 
+import jdk.jfr.Name;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import java.util.*;
 
 @SpringBootApplication
@@ -20,89 +25,70 @@ public class TestDemoApplication {
 @RestController
 @RequestMapping("/coffees")
 class RestApiDemoController {
-	private List<Coffee> coffees = new ArrayList<>();
 
-	public RestApiDemoController() {
-		coffees.addAll(
-				List.of(
-						new Coffee("Caf'e Cereza"),
-						new Coffee("Caf'e Ganador"),
-						new Coffee("Caf'e Lareno"),
-						new Coffee("Caf'e Tres Pontas")
-				)
-		);
-		coffees.add(new Coffee("Caf'e Brown"));
+	// 步驟三：注入 CoffeeRepository，並建立 constructor
+	private final CoffeeRepository coffeeRepository;
+
+	@Autowired
+	public RestApiDemoController(CoffeeRepository coffeeRepository) {
+		this.coffeeRepository = coffeeRepository;
+
+		// 步驟四：建立咖啡資料
+		coffeeRepository.saveAll(List.of(
+				new Coffee("Café Cereza"),
+				new Coffee("Café Ganador"),
+				new Coffee("Café Lareño"),
+				new Coffee("Café Três Pontas")
+		));
 	}
 
+	// 步驟五：逐一修改為 coffeeRepository，並且使用 CrudRepository 中寫好的方法
+
 	// 得到全部的咖啡資料
-	@RequestMapping(method = RequestMethod.GET)
-//	@GetMapping("/coffees")
+	@GetMapping
 	Iterable<Coffee> getCoffees() {
-		return coffees;
+		return coffeeRepository.findAll();
 	}
 
 	// 得到某一筆的咖啡資料，傳入 id 查詢
 	@GetMapping("/{id}")
 	Optional<Coffee> getCoffeeById(@PathVariable String id) {
-		for (Coffee c: coffees) {
-			if (c.getId().equals(id)) {
-				return Optional.of(c);
-			}
-		}
-		return Optional.empty();
+		return coffeeRepository.findById(id);
 	}
 
-//	@GetMapping("/coffees/{id}")
-//	List<Coffee> getCoffeeById(@PathVariable String id) {
-//		for (Coffee c: coffees) {
-//			if (c.getId().equals(id)) {
-//				return List.of(c);
-//			}
-//		}
-//		return Collections.emptyList();
-//	}
-
-
-//	@PostMapping()
-//	List<Coffee> addCoffee(@RequestBody Coffee coffee) {
-//		coffees.add(new Coffee(coffee.getName()));
-//		return coffees;
-//	}
-	@PostMapping()
+	@PostMapping
 	Coffee postCoffee(@RequestBody Coffee coffee) {
-//		coffees.add(coffee); => 造成 id 為 null
-		coffees.add(new Coffee(coffee.getName()));
-		return coffee;
+		return coffeeRepository.save(coffee);
 	}
 
 	// 若無此更新資料就新增一筆，若有此資料就更新
 	@PutMapping("/{id}")
 	ResponseEntity<Coffee> putCoffee(@PathVariable String id, @RequestBody Coffee coffee) {
-		int coffeeIndex = -1;
-
-		for (Coffee c: coffees) {
-			if (c.getId().equals(coffee.getId())) {
-				coffeeIndex = coffees.indexOf(c);
-				coffees.set(coffeeIndex, coffee);
-			}
-		}
-
-		return (coffeeIndex == -1) ?
-				new ResponseEntity<>(postCoffee(coffee), HttpStatus.CREATED) :
-				new ResponseEntity<>(coffee, HttpStatus.OK);
+		// 不存在 => 新增(CREATED)，存在 => 更新(HttpStatus.OK)
+		return (!coffeeRepository.existsById(id)) ?
+				new ResponseEntity<>(coffeeRepository.save(coffee), HttpStatus.CREATED) :
+				new ResponseEntity<>(coffeeRepository.save(coffee), HttpStatus.OK);
 	}
 
 	@DeleteMapping("/{id}")
 	void deleteCoffee(@PathVariable String id) {
-		coffees.removeIf(c -> c.getId().equals(id));
+		coffeeRepository.deleteById(id);
 	}
 }
 
+// 步驟二：新增 CoffeeRepository，去繼承 CrudRepository 中已經寫好的方法
+interface CoffeeRepository extends CrudRepository<Coffee, String> {}
 
+// 步驟一：將 class Model 注釋為 @Entity，並建構空的建構子
+@Entity // 是 JPA 的 annotations 注釋
 class Coffee {
-	// 設為 final 只能被指派一次，且不能被修改
-	private final String id;
+	@Id
+	private  String id;
 	private String name;
+
+	// 使用 Java Persistence API 會要求使用一個無參數的建構子
+	public Coffee() {
+	}
 
 	public Coffee(String id, String name) {
 		this.id = id;
@@ -115,6 +101,10 @@ class Coffee {
 
 	public String getId() {
 		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	public String getName() {
