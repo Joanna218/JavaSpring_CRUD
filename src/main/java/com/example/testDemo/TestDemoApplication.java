@@ -6,6 +6,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,13 @@ public class TestDemoApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TestDemoApplication.class, args);
 	}
+
+	@Bean
+	@ConfigurationProperties(prefix = "droid")
+	Droid createDroid() {
+		return new Droid();
+	}
+
 
 }
 // 為了使 Controller 功能單一化，將初始化資料樣本提高層次為單一元件
@@ -185,3 +193,39 @@ class GreetingController {
  * 步驟四：寫一個 GreetingController 並且注入 Greeting 這個 bean，且 Mapping 進去後，return 使用 greeting.xxx
  * 步驟五：application.properties 使用 xxx.xxx 的方式
  * */
+
+
+class Droid {
+	private String id, description;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+}
+
+@RestController
+@RequestMapping("/droid")
+class DroidController {
+	private final Droid droid;
+
+	public DroidController(Droid droid) {
+		this.droid = droid;
+	}
+
+	@GetMapping
+	Droid getDroid() {
+		return droid;
+	}
+}
