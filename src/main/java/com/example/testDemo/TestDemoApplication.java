@@ -4,6 +4,8 @@ import jdk.jfr.Name;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import javax.persistence.Id;
 import java.util.*;
 
 @SpringBootApplication
+@ConfigurationPropertiesScan
 public class TestDemoApplication {
 
 	public static void main(String[] args) {
@@ -130,3 +133,55 @@ class Coffee {
 		this.name = name;
 	}
 }
+
+
+/* Chapter 5 */
+@ConfigurationProperties(prefix = "greeting")
+class Greeting {
+	private String name;
+	private String coffee;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getCoffee() {
+		return coffee;
+	}
+
+	public void setCoffee(String coffee) {
+		this.coffee = coffee;
+	}
+}
+
+@RestController
+@RequestMapping("/greeting")
+class GreetingController {
+	private final Greeting greeting;
+
+	public GreetingController(Greeting greeting) {
+		this.greeting = greeting;
+	}
+
+	@GetMapping("/name")
+	String getGreeting() {
+		return greeting.getName();
+	}
+
+	@GetMapping("/coffee")
+	String getNameAndCoffee() {
+		return greeting.getCoffee();
+	}
+}
+
+/* 為了解決使用 @Value 的限制，改使用@ConfigurationProperties，它提供可被工具驗證性
+ * 步驟一：在 Model Greeting Class 掛上 @ConfigurationProperties(prefix = "greeting")
+ * 步驟二：在app void main 進入點 掛上 @ConfigurationPropertiesScan
+ * 步驟三：為了能讓 Spring 看得懂 annotation，需要 import dependency configuration-processor 到 pom.xml
+ * 步驟四：寫一個 GreetingController 並且注入 Greeting 這個 bean，且 Mapping 進去後，return 使用 greeting.xxx
+ * 步驟五：application.properties 使用 xxx.xxx 的方式
+ * */
